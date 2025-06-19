@@ -13,7 +13,7 @@ services:
       - ./requirements.txt:/requirements.txt
     environment:
       - AIRFLOW__CORE__EXECUTOR=LocalExecutor
-      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=mysql+mysqlconnector://flowuser:passflow@mysql_ecommerce/data_airflow
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=mysql+mysqlconnector://user:passwordw@mysql_ecommerce/data_airflow
       - AIRFLOW__WEBSERVER__SECRET_KEY=my_secret_key
       - AIRFLOW__WEBSERVER__WEB_SERVER_HOST=0.0.0.0
       - RATELIMIT_STORAGE_URL=redis://redis_ecommerce:6379
@@ -41,7 +41,7 @@ services:
     environment:
       - PYTHONWARNINGS=ignore
       - AIRFLOW__CORE__EXECUTOR=LocalExecutor
-      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=mysql+mysqlconnector://flowuser:passflow@mysql_ecommerce/data_airflow
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=mysql+mysqlconnector://user:password@mysql_ecommerce/data_airflow
       - AIRFLOW__CORE__DEFAULT_TIMEZONE=Europe/Paris
     command: >
       bash -c "
@@ -59,10 +59,10 @@ services:
     container_name: mysql_ecommerce
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: passroot
+      MYSQL_ROOT_PASSWORD: 
       MYSQL_DATABASE: data_airflow
-      MYSQL_USER: flowuser
-      MYSQL_PASSWORD: passflow
+      MYSQL_USER: 
+      MYSQL_PASSWORD: 
     ports:
       - "3307:3306"
     volumes:
@@ -76,7 +76,7 @@ services:
       - "8081:80"
     environment:
       PMA_HOST: mysql_ecommerce
-      MYSQL_ROOT_PASSWORD: passroot
+      MYSQL_ROOT_PASSWORD: 
       UPLOAD_LIMIT: 1G
     depends_on:
       - mysql
