@@ -1,0 +1,91 @@
+services:
+  airflow:
+    image: apache/airflow:2.9.0
+    container_name: airflow_ecommerce
+    restart: always
+    ports:
+      - "8090:8080"
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./logs:/opt/airflow/logs
+      - ./data:/opt/airflow/data
+      - ./config:/opt/airflow/config
+      - ./requirements.txt:/requirements.txt
+    environment:
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=mysql+mysqlconnector://flowuser:passflow@mysql_ecommerce/data_airflow
+      - AIRFLOW__WEBSERVER__SECRET_KEY=my_secret_key
+      - AIRFLOW__WEBSERVER__WEB_SERVER_HOST=0.0.0.0
+      - RATELIMIT_STORAGE_URL=redis://redis_ecommerce:6379
+      - AIRFLOW__CORE__DEFAULT_TIMEZONE=Europe/Paris
+    command: >
+      bash -c "
+      pip install -r /requirements.txt &&
+      until nc -z mysql_ecommerce 3306; do echo 'Waiting for MySQL...'; sleep 2; done &&
+      airflow db upgrade &&
+      exec airflow webserver"
+    depends_on:
+      - mysql
+      - redis
+
+  airflow_scheduler:
+    image: apache/airflow:2.9.0
+    container_name: airflow_scheduler_ecommerce
+    restart: always
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./logs:/opt/airflow/logs
+      - ./data:/opt/airflow/data
+      - ./config:/opt/airflow/config
+      - ./requirements.txt:/requirements.txt
+    environment:
+      - PYTHONWARNINGS=ignore
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=mysql+mysqlconnector://flowuser:passflow@mysql_ecommerce/data_airflow
+      - AIRFLOW__CORE__DEFAULT_TIMEZONE=Europe/Paris
+    command: >
+      bash -c "
+      pip install -r /requirements.txt &&
+      until nc -z mysql_ecommerce 3306; do echo 'Waiting for MySQL...'; sleep 2; done &&
+      airflow db migrate &&
+      sleep 10 &&
+      airflow scheduler"
+    depends_on:
+      - mysql
+      - redis
+
+  mysql:
+    image: mysql:8.3
+    container_name: mysql_ecommerce
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: passroot
+      MYSQL_DATABASE: data_airflow
+      MYSQL_USER: flowuser
+      MYSQL_PASSWORD: passflow
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: phpmyadmin_ecommerce
+    restart: always
+    ports:
+      - "8081:80"
+    environment:
+      PMA_HOST: mysql_ecommerce
+      MYSQL_ROOT_PASSWORD: passroot
+      UPLOAD_LIMIT: 1G
+    depends_on:
+      - mysql
+
+  redis:
+    image: redis:alpine
+    container_name: redis_ecommerce
+    restart: always
+
+volumes:
+  mysql_data:
+    driver: local
